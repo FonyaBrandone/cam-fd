@@ -1,0 +1,43 @@
+# Core Deep Learning
+torch>=2.1.0
+torchvision>=0.16.0
+timm>=0.9.12
+einops>=0.7.0
+
+# Data Processing
+numpy>=1.24.0
+pandas>=2.0.0
+pillow>=10.0.0
+h5py>=3.9.0
+opencv-python>=4.8.0
+
+# Experiment Tracking
+wandb>=0.15.0
+tensorboard>=2.14.0
+
+# Adversarial Attacks
+autoattack>=0.2.0
+foolbox>=3.3.3
+
+# Configuration
+pyyaml>=6.0
+omegaconf>=2.3.0
+hydra-core>=1.3.0
+
+# Utilities
+tqdm>=4.66.0
+scikit-learn>=1.3.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Distributed Training
+accelerate>=0.23.0
+
+# Development
+pytest>=7.4.0
+black>=23.7.0
+flake8>=6.1.0
+ipython>=8.14.0
+
+# Cuda version 12.2
+# cupy-cuda122>=12.2.0
