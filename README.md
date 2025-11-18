@@ -68,9 +68,6 @@ Vision models achieve state-of-the-art performance but remain vulnerable to adve
 - [x] `requirements.txt` - Python dependencies
 - [x] `setup.py` - Package setup for installation
 - [x] `README.md` - Complete documentation
-- [x] `QUICKSTART.md` - Quick start guide
-- [x] `.gitignore` - Git ignore patterns
-- [x] `LICENSE` - (Create if needed)
 
 ## 📊 Component Verification
 
@@ -164,4 +161,5 @@ All parameters are configurable in `configs/default_config.yaml`:
 - [x] `num_steps` (PGD iterations)
 - [x] `step_size` (PGD step size)
 - [x] Curric
+
 
