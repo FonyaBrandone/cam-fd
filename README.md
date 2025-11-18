@@ -2,19 +2,18 @@
 `Abstract`
 Vision models achieve state-of-the-art performance but remain vulnerable to adversarial perturbations. While existing adversarial training methods improve robustness, they often sacrifice accuracy on clean data or fail to generalize across domains. We introduce CAM-FD, a Curriculum Adversarial Mixup with Feature Denoising, a unified training framework that simultaneously optimizes decision boundary smoothness, output-level robustness, representation level stability, and weight-space flatness. By strategically combining mixup regularization, TRADES-style KL smoothing, feature denoising, and Adversarial Weight Perturbation (AWP) into a single joint loss function, CAM-FD addresses distinct failure modes of single-component defenses. We are demonstrating through extensive experiments on ImageNet across multiple network architecture backbones that our approach establishes a new baseline. We aim to achieve superior adversarial robustness while maintaining strong generalization on clean out-of-sample data and robustness under distribution shifts. Unlike prior methods that optimize robustness and generalization separately or sequentially, CAM-FD provides a principled solution to the adversarial robustness-generalization trade-off, making deep learning models more reliable for safety-critical applications in healthcare, security and beyond.
 
-# CAM-FD Complete Checklist
 
 ## ✅ Configuration Files
 
 - [x] `configs/default_config.yaml` - Main configuration with all parameters
-- [x] `configs/pcam_config.yaml` - (Optional, can copy from default)
-- [x] `configs/model_configs.yaml` - (Optional, can copy from default)
+- [x] `configs/pcam_config.yaml` 
+- [x] `configs/model_configs.yaml`
 
 ## ✅ Data Module (`data/`)
 
 - [x] `data/__init__.py` - Package initialization
 - [x] `data/pcam_dataset.py` - PCam dataset class and dataloaders
-- [x] `data/cloud_loader.py` - Cloud storage integration (GCS/S3/Azure)
+- [x] `data/imagenet_dataset.py` - PCam dataset class and dataloaders
 - [x] `data/data_utils.py` - Data utilities and transforms
 
 ## ✅ Models Module (`models/`)
@@ -143,8 +142,7 @@ Vision models achieve state-of-the-art performance but remain vulnerable to adve
    - Attack success rates
 
 3. **Data Pipeline**
-   - Cloud storage integration
-   - PCam dataset
+   - PCam and ImageNet dataset
    - Data augmentation
    - Efficient dataloaders
 
@@ -166,3 +164,4 @@ All parameters are configurable in `configs/default_config.yaml`:
 - [x] `num_steps` (PGD iterations)
 - [x] `step_size` (PGD step size)
 - [x] Curric
+
