@@ -1,4 +1,8 @@
-# CAM-FD Complete File Checklist
+# CAM-FD: Improving Adversarial Robustness without Sacrificing Generalization
+`Abstract`
+Vision models achieve state-of-the-art performance but remain vulnerable to adversarial perturbations. While existing adversarial training methods improve robustness, they often sacrifice accuracy on clean data or fail to generalize across domains. We introduce CAM-FD, a Curriculum Adversarial Mixup with Feature Denoising, a unified training framework that simultaneously optimizes decision boundary smoothness, output-level robustness, representation level stability, and weight-space flatness. By strategically combining mixup regularization, TRADES-style KL smoothing, feature denoising, and Adversarial Weight Perturbation (AWP) into a single joint loss function, CAM-FD addresses distinct failure modes of single-component defenses. We are demonstrating through extensive experiments on ImageNet across multiple network architecture backbones that our approach establishes a new baseline. We aim to achieve superior adversarial robustness while maintaining strong generalization on clean out-of-sample data and robustness under distribution shifts. Unlike prior methods that optimize robustness and generalization separately or sequentially, CAM-FD provides a principled solution to the adversarial robustness-generalization trade-off, making deep learning models more reliable for safety-critical applications in healthcare, security and beyond.
+
+# CAM-FD Complete Checklist
 
 ## ✅ Configuration Files
 
@@ -71,7 +75,7 @@
 
 ## 📊 Component Verification
 
-### Loss Function Components (All Implemented ✅)
+### Loss Function Components 
 
 1. **L_CE(mix)** - Cross-Entropy with Mixup
    - File: `losses/mixup_loss.py`
@@ -98,7 +102,7 @@
    - Class: `CAMFDLoss`
    - Features: All components integrated, ablation support
 
-### Model Architecture (All Implemented ✅)
+### Model Architecture 
 
 1. **Backbones**
    - ResNet (18, 34, 50, 101)
@@ -116,7 +120,7 @@
    - Feature extraction and denoising
    - Compatible with all loss components
 
-### Attack Implementations (All Implemented ✅)
+### Attack Implementations 
 
 1. **FGSM** - Single-step attack
 2. **PGD** - Multi-step iterative attack
@@ -125,7 +129,7 @@
    - Adaptive variant
 3. **AutoAttack** - Ensemble attack wrapper
 
-### Training Infrastructure (All Implemented ✅)
+### Training Infrastructure 
 
 1. **Trainer** - Main training loop
    - Adversarial training
@@ -152,7 +156,7 @@
 
 ## 🔧 Configuration Parameters
 
-All parameters from your proposal are configurable in `configs/default_config.yaml`:
+All parameters are configurable in `configs/default_config.yaml`:
 
 - [x] `lambda_tr` (TRADES weight)
 - [x] `lambda_rec` (Denoising weight)
