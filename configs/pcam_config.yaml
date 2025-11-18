@@ -1,0 +1,178 @@
+# PCam-specific Configuration for CAM-FD
+# Optimized for H100 80GB GPU
+
+experiment:
+  name: "cam-fd"
+  seed: 42
+  project_name: "cam-fd-medical-robustness"
+  tags: ["pcam", "adversarial-training"]
+
+# H100 Hardware Configuration (80GB)
+hardware:
+  device: "cuda"
+  num_gpus: 1
+  mixed_precision: true
+  precision: "bf16"  # recommended for h100
+  cudnn_benchmark: true
+  distributed: false
+
+# PCam Data Configuration
+data:
+  dataset: "pcam"
+  data_dir: "/ocean/projects/cis250019p/bfonya/CAM-FD/pcam_data"  
+  download_url: "https://zenodo.org/record/2546921"
+  download_dir: "/ocean/projects/cis250019p/bfonya/CAM-FD/pcam_data"
+  download: true
+  train_split: 0.8
+  val_split: 0.1
+  test_split: 0.1
+  
+  # PCam: 96x96 RGB patches, binary classification
+  num_classes: 2
+  image_size: 96
+  batch_size: 256  # Optimized for H100 80GB
+  num_workers: 16   # High parallelism for fast data loading
+  pin_memory: true
+  prefetch_factor: 4
+  
+  # Data augmentation for medical imaging
+  augmentation:
+    random_crop: false  # PCam is already 96x96
+    random_flip: true
+    color_jitter: true
+    normalize: true
+    mean: [0.701, 0.538, 0.692]  # PCam-specific statistics
+    std: [0.235, 0.277, 0.213]
+
+# Model Configuration
+model:
+  backbone: "resnet50"  # resnet50, convnext_base, vit_base_patch16_224
+  pretrained: true
+  num_classes: 2
+  
+  # Feature denoiser configuration
+  denoiser:
+    enabled: true
+    architecture: "autoencoder"  # autoencoder or unet
+    feature_layers: ["layer3", "layer4"]  # ResNet layers
+    hidden_dim: 512
+    num_blocks: 3
+
+# CAM-FD Loss Configuration (Based on your proposal)
+loss:
+  # Component 1: Cross-Entropy with Mixup
+  mixup:
+    enabled: true
+    alpha: 1.0  # Beta(1.0, 1.0) for uniform mixing
+    
+  # Component 2: TRADES KL Divergence
+  trades:
+    enabled: true
+    lambda_tr: 6.0  # Weight for TRADES term
+    
+  # Component 3: Feature Denoising
+  denoising:
+    enabled: true
+    lambda_rec: 0.5  # Weight for reconstruction loss
+    loss_type: "mse"  # mse, l1, smooth_l1, cosine
+    
+  # Component 4: Adversarial Weight Perturbation
+  awp:
+    enabled: true
+    lambda_awp: 0.01  # Weight for AWP
+    gamma: 0.01      # Perturbation radius
+    start_epoch: 5   # Start AWP after 5 epochs for stability
+
+# Adversarial Training Configuration
+adversarial:
+  enabled: true
+  attack_type: "pgd"  # fgsm or pgd
+  
+  # PGD parameters (10 steps during training)
+  pgd:
+    epsilon: 0.031     # 8/255 L-inf budget
+    step_size: 0.007   # 2/255 per step
+    num_steps: 10      # 10 steps during training
+    random_start: true
+    
+  # FGSM parameters (backup)
+  fgsm:
+    epsilon: 0.031
+    
+  # Curriculum learning for gradual adversarial training
+  curriculum:
+    enabled: true
+    start_epsilon: 0.015  # Start with weaker attacks
+    end_epsilon: 0.031    # End with full strength
+    warmup_epochs: 10     # Ramp up over 10 epochs
+
+# Training Configuration
+training:
+  num_epochs: 30
+  gradient_accumulation_steps: 1  # No accumulation needed with large batch
+  max_grad_norm: 1.0  # Gradient clipping
+  
+  # Optimizer: SGD with momentum
+  optimizer:
+    type: "sgd"
+    lr: 0.1            # Start with high LR
+    momentum: 0.9
+    weight_decay: 5e-4
+    nesterov: true
+    
+  # Learning rate scheduler: Cosine annealing with warmup
+  scheduler:
+    type: "cosine"
+    warmup_epochs: 5
+    warmup_lr: 0.01
+    min_lr: 1e-5
+
+# Evaluation Configuration
+evaluation:
+  eval_frequency: 1  # Evaluate every epoch
+  save_frequency: 5  # Save checkpoint every 5 epochs
+  
+  # Attacks for evaluation
+  attacks:
+    - name: "clean"
+      enabled: true
+      
+    - name: "fgsm"
+      enabled: true
+      epsilon: 0.031
+      
+    - name: "pgd"
+      enabled: true
+      epsilon: 0.031
+      step_size: 0.007
+      num_steps: 20  # More steps for evaluation
+      
+    - name: "autoattack"
+      enabled: false  # Enable for final evaluation (expensive)
+      epsilon: 0.031
+      version: "standard"
+
+# Logging Configuration
+logging:
+  wandb:
+    enabled: true
+    entity: "fonyabrandone-cmu"  
+    project: "cam-fd-ablations-1"    
+    log_frequency: 50  # Log every 50 steps
+    log_gradients: false  # Disable for speed
+    log_images: true
+    num_log_images: 16
+    
+  tensorboard:
+    enabled: false
+    
+  checkpoint:
+    save_dir: "./checkpoints/"
+    save_best_only: false
+    monitor: "val/acc_clean"
+    mode: "max"
+
+# Reproducibility
+reproducibility:
+  deterministic: false  # Set to true for exact reproducibility (slower)
+  benchmark: true       # CuDNN benchmark for speed

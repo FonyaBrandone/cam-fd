@@ -1,0 +1,233 @@
+# CAM-FD Complete Default Configuration
+# All parameters for training on H100 with Google Colab data access
+
+experiment:
+  name: "cam-fd-pcam-baseline"
+  seed: 42
+  project_name: "cam-fd-medical-robustness"
+  tags: ["pcam", "adversarial-training", "medical-imaging"]
+
+# Hardware Configuration (H100 optimized)
+hardware:
+  device: "cuda"
+  num_gpus: 1
+  mixed_precision: true
+  precision: "bf16"  # BF16 for H100, use "fp16" for other GPUs
+  cudnn_benchmark: true
+  distributed: false
+  world_size: 1
+  rank: 0
+
+# Data Configuration (Google Colab compatible)
+data:
+  dataset: "pcam"
+  
+  # Data paths (Google Drive/Colab compatible)
+  data_dir: "/ocean/projects/cis250019p/bfonya/CAM-FD/pcam_data"  # Will download here
+  download_url: "https://zenodo.org/record/2546921"  # PCam dataset
+  
+  # PCam specific
+  num_classes: 2
+  image_size: 96
+  batch_size: 128  # Adjust based on GPU memory
+  num_workers: 4   # Adjust for Colab/local
+  pin_memory: true
+  prefetch_factor: 2
+  persistent_workers: true
+  
+  # Data augmentation
+  augmentation:
+    enabled: true
+    random_horizontal_flip: true
+    random_vertical_flip: true
+    random_rotation: 90
+    color_jitter:
+      enabled: true
+      brightness: 0.2
+      contrast: 0.2
+      saturation: 0.2
+      hue: 0.1
+    normalize: true
+    mean: [0.701, 0.538, 0.692]  # PCam statistics
+    std: [0.235, 0.277, 0.213]
+
+# Model Configuration
+model:
+  backbone: "resnet50"  # resnet18, resnet34, resnet50, resnet101, convnext_base, vit_base
+  pretrained: true
+  num_classes: 2
+  
+  # Feature denoiser
+  denoiser:
+    enabled: true
+    architecture: "autoencoder"  # autoencoder, unet
+    feature_layers: ["layer3", "layer4"]
+    hidden_dim: 512
+    num_blocks: 3
+
+# Loss Function Weights (CAM-FD components)
+loss:
+  # Component 1: Cross-entropy with Mixup
+  mixup:
+    enabled: true
+    alpha: 1.0  # Beta distribution parameter
+    
+  # Component 2: TRADES KL Divergence
+  trades:
+    enabled: true
+    lambda_tr: 6.0  # TRADES weight
+    
+  # Component 3: Feature Denoising
+  denoising:
+    enabled: true
+    lambda_rec: 0.5  # Feature reconstruction weight
+    loss_type: "mse"  # mse, l1, smooth_l1, cosine
+    normalize: false
+    layer_weights: null  # Optional: {"layer3": 0.3, "layer4": 0.7}
+    
+  # Component 4: Adversarial Weight Perturbation
+  awp:
+    enabled: true
+    lambda_awp: 0.01  # AWP weight
+    gamma: 0.01  # perturbation radius
+    start_epoch: 5  # when to start AWP
+
+# Adversarial Training
+adversarial:
+  enabled: true
+  attack_type: "pgd"  # fgsm, pgd
+  
+  # PGD parameters
+  pgd:
+    epsilon: 0.031  # 8/255
+    step_size: 0.007  # 2/255
+    num_steps: 10
+    random_start: true
+    clip_min: 0.0
+    clip_max: 1.0
+    
+  # FGSM parameters
+  fgsm:
+    epsilon: 0.031  # 8/255
+    clip_min: 0.0
+    clip_max: 1.0
+    
+  # Curriculum learning for adversarial training
+  curriculum:
+    enabled: true
+    schedule_type: "linear"  # linear, cosine, step, exponential
+    start_epsilon: 0.01
+    end_epsilon: 0.031
+    warmup_epochs: 10
+    start_num_steps: 5
+    end_num_steps: 10
+
+# Training Configuration
+training:
+  num_epochs: 10 # 100
+  gradient_accumulation_steps: 1
+  max_grad_norm: 1.0  # Gradient clipping
+  
+  # Optimizer
+  optimizer:
+    type: "sgd"  # sgd, adam, adamw
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 5e-4
+    nesterov: true
+    # Adam/AdamW specific
+    betas: [0.9, 0.999]
+    eps: 1e-8
+    
+  # Learning rate scheduler
+  scheduler:
+    type: "cosine"  # cosine, multistep, plateau, warmup_cosine
+    warmup_epochs: 5
+    warmup_start_lr: 0.01
+    min_lr: 1e-5
+    
+    # MultiStep specific
+    milestones: [50, 75]
+    gamma: 0.1
+    
+    # Plateau specific
+    patience: 10
+    factor: 0.1
+
+# Evaluation Configuration
+evaluation:
+  eval_frequency: 1  # evaluate every N epochs
+  save_frequency: 5  # save checkpoint every N epochs
+  
+  # Attacks for evaluation
+  attacks:
+    - name: "clean"
+      enabled: true
+      
+    - name: "fgsm"
+      enabled: true
+      epsilon: 0.031
+      
+    - name: "pgd"
+      enabled: true
+      epsilon: 0.031
+      step_size: 0.007
+      num_steps: 20
+      
+    - name: "pgd_50"
+      enabled: false  # Optional: stronger attack
+      epsilon: 0.031
+      step_size: 0.003
+      num_steps: 50
+      
+    - name: "autoattack"
+      enabled: false  # expensive, enable for final evaluation
+      epsilon: 0.031
+      version: "standard"  # standard, plus, rand
+
+# Logging Configuration
+logging:
+  # Weights & Biases
+  wandb:
+    enabled: true
+    entity: "fonyabrandone-cmu"
+    project: "cam-fd-ablations-1"
+    name: null  # Auto-generated if null
+    group: null
+    tags: null
+    notes: null
+    log_frequency: 50  # log every N steps
+    log_gradients: false
+    log_images: true
+    num_log_images: 16
+    watch_model: true
+    
+  # TensorBoard (optional)
+  tensorboard:
+    enabled: false
+    log_dir: "./logs/tensorboard"
+    
+  # Checkpoints
+  checkpoint:
+    save_dir: "/ocean/projects/cis250019p/bfonya/CAM-FD/checkpoints"
+    save_best_only: false
+    save_last: true
+    monitor: "valid/acc_clean"
+    mode: "max"
+    max_checkpoints: 5
+  
+  # Console logging
+  console:
+    log_frequency: 10
+    progress_bar: true
+
+# Reproducibility
+reproducibility:
+  deterministic: false  # slower but reproducible
+  benchmark: true  # faster but may not be reproducible
+
+# Debug mode
+debug:
+  enabled: false
+  num_batches: 10  # Only train on N batches when debugging
+  overfit_batches: 0  # Overfit on N batches (for testing)
